@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeBlitz — 1v1 Competitive Coding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+/* ── INDEX-SPECIFIC ── */
+.hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 60px;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  position: relative;
+}
+
+.scan-line {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  animation: scan 4s linear infinite;
+  opacity: 0.6;
+  z-index: 10;
+}
+
+@keyframes scan {
+  0% { top: 0; }
+  100% { top: 100vh; }
+}
+
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.logo-mark {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 92px;
+  line-height: 0.9;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+  position: relative;
+}
+
+.logo-mark span {
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent), 0 0 60px var(--accent-dim);
+}
+
+.hero-tagline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 16px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.hero-tagline::before {
+  content: '> ';
+  color: var(--accent);
+}
+
+.stats-row {
+  display: flex;
+  gap: 40px;
+  margin-top: 48px;
+}
+
+.stat-item {
+  border-left: 2px solid var(--accent);
+  padding-left: 16px;
+}
+
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.divider-line {
+  width: 1px;
+  background: var(--border);
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  z-index: 2;
+}
+
+.divider-line::after {
+  content: 'VS';
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  color: var(--accent);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-primary);
+  padding: 12px 4px;
+  border: 1px solid var(--accent);
+  letter-spacing: 2px;
+}
+
+/* Auth Panel */
+.auth-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: 2;
+}
+
+.auth-panel::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 20px; right: 20px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-tab {
+  padding: 18px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: none;
+}
+
+.auth-tab.active {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.auth-tab:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.03);
+}
+
+.auth-form {
+  padding: 32px;
+  display: none;
+}
+
+.auth-form.active { display: block; }
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  padding: 12px 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-dim);
+}
+
+.form-input::placeholder { color: var(--text-ghost); }
+
+.cf-hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  padding: 8px;
+  background: var(--bg-hover);
+  border-left: 2px solid var(--accent-dim);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s;
+}
+
+.btn-primary:hover::after { transform: translateX(100%); }
+.btn-primary:hover { background: var(--accent-bright); }
+.btn-primary:active { transform: scale(0.99); }
+
+.error-msg {
+  background: rgba(255, 59, 48, 0.1);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  color: #ff3b30;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  display: none;
+}
+
+.success-msg {
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  display: none;
+}
+
+.terminal-line {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blink {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--accent);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.features-strip {
+  position: fixed;
+  bottom: 0;
+  left: 0; right: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg-primary);
+  display: flex;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.feature-item {
+  flex: 1;
+  padding: 16px 24px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feature-item:last-child { border-right: none; }
+
+.feature-icon {
+  font-size: 20px;
+  filter: grayscale(0.3);
+}
+
+.feature-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.feature-text strong {
+  color: var(--text-primary);
+  display: block;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-left { padding: 40px 24px; padding-top: 80px; }
+  .hero-right { padding: 24px; }
+  .divider-line { display: none; }
+  .logo-mark { font-size: 64px; }
+  .features-strip { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="noise-overlay"></div>
+<div class="scan-line"></div>
+
+<div class="hero">
+  <div class="hero-left">
+    <div class="logo-mark">CODE<br><span>BLITZ</span></div>
+    <p class="hero-tagline">1v1 competitive coding arena</p>
+
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num" id="stat-users">—</div>
+        <div class="stat-label">Coders</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="stat-battles">—</div>
+        <div class="stat-label">Battles</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">1000</div>
+        <div class="stat-label">Starting ELO</div>
+      </div>
+    </div>
+
+    <div class="terminal-line">
+      <span style="color: var(--accent)">$</span>
+      <span id="terminal-text"></span>
+      <span class="blink"></span>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <div class="hero-right">
+    <div class="auth-panel">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('login')">Login</button>
+        <button class="auth-tab" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="auth-form active" id="login-form">
+        <div class="error-msg" id="login-error"></div>
+        <div class="success-msg" id="login-success"></div>
+        <div class="form-group">
+          <label class="form-label">Email or CF Handle</label>
+          <input class="form-input" type="text" id="login-identifier" placeholder="you@example.com or tourist">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="login-password" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" onclick="handleLogin()">ENTER THE ARENA</button>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="auth-form" id="register-form">
+        <div class="error-msg" id="register-error"></div>
+        <div class="success-msg" id="register-success"></div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input class="form-input" type="text" id="reg-name" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" id="reg-email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="reg-password" placeholder="Min 6 characters">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Codeforces Handle</label>
+          <input class="form-input" type="text" id="reg-cf" placeholder="tourist">
+          <div class="cf-hint">⚡ Must be logged in to codeforces.com during battles. This handle is verified against the CF API.</div>
+        </div>
+        <button class="btn-primary" onclick="handleRegister()">CREATE ACCOUNT</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="features-strip">
+  <div class="feature-item">
+    <span class="feature-icon">⚡</span>
+    <div class="feature-text"><strong>Live Tracking</strong>CF submissions polled every 8s</div>
+  </div>
+  <div class="feature-item">
+    <span class="feature-icon">🏆</span>
+    <div class="feature-text"><strong>ELO Rating</strong>Dynamic skill-based matchmaking</div>
+  </div>
+  <div class="feature-item">
+    <span class="feature-icon">🎯</span>
+    <div class="feature-text"><strong>Custom Problems</strong>Choose difficulty range & count</div>
+  </div>
+  <div class="feature-item">
+    <span class="feature-icon">⏱</span>
+    <div class="feature-text"><strong>Time Limits</strong>Custom battle duration</div>
+  </div>
+</div>
+
+<script>
+const API = '';
+
+// Terminal typing effect
+const phrases = [
+  'solve faster than your opponent',
+  'claim the ELO',
+  'pick your difficulty range',
+  'set the time limit',
+  'first to solve wins the point'
+];
+let phraseIdx = 0, charIdx = 0, deleting = false;
+const termEl = document.getElementById('terminal-text');
+function typeEffect() {
+  const phrase = phrases[phraseIdx];
+  if (!deleting) {
+    termEl.textContent = phrase.substring(0, ++charIdx);
+    if (charIdx === phrase.length) { deleting = true; setTimeout(typeEffect, 1800); return; }
+  } else {
+    termEl.textContent = phrase.substring(0, --charIdx);
+    if (charIdx === 0) { deleting = false; phraseIdx = (phraseIdx + 1) % phrases.length; }
+  }
+  setTimeout(typeEffect, deleting ? 40 : 70);
+}
+typeEffect();
+
+// Load leaderboard stats
+fetch('/api/leaderboard').then(r => r.json()).then(data => {
+  document.getElementById('stat-users').textContent = data.length + '+';
+}).catch(() => {});
+
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+  });
+  document.getElementById('login-form').classList.toggle('active', tab === 'login');
+  document.getElementById('register-form').classList.toggle('active', tab === 'register');
+}
+
+function showMsg(id, msg, isError = true) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+async function handleLogin() {
+  const identifier = document.getElementById('login-identifier').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!identifier || !password) return showMsg('login-error', 'Please fill all fields');
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password })
+    });
+    const data = await res.json();
+    if (!res.ok) return showMsg('login-error', data.error);
+    localStorage.setItem('cb_token', data.token);
+    localStorage.setItem('cb_user', JSON.stringify(data.user));
+    window.location.href = '/dashboard.html';
+  } catch {
+    showMsg('login-error', 'Connection error');
+  }
+}
+
+async function handleRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const cfHandle = document.getElementById('reg-cf').value.trim();
+  if (!name || !email || !password || !cfHandle)
+    return showMsg('register-error', 'All fields are required');
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, cfHandle })
+    });
+    const data = await res.json();
+    if (!res.ok) return showMsg('register-error', data.error);
+    showMsg('register-success', '✓ Account created! Logging in…', false);
+    localStorage.setItem('cb_token', data.token);
+    localStorage.setItem('cb_user', JSON.stringify(data.user));
+    setTimeout(() => window.location.href = '/dashboard.html', 1000);
+  } catch {
+    showMsg('register-error', 'Connection error');
+  }
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('login-form').classList.contains('active')) handleLogin();
+  else handleRegister();
+});
+
+// Redirect if already logged in
+if (localStorage.getItem('cb_token')) window.location.href = '/dashboard.html';
+</script>
+</body>
+</html>
