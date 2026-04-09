@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeBlitz — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.page-content { position: relative; z-index: 1; }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+/* Profile card */
+.profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.profile-glow {
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 120px; height: 120px;
+  background: var(--accent);
+  opacity: 0.04;
+  border-radius: 50%;
+  filter: blur(30px);
+}
+
+.profile-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.profile-cf {
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+
+.profile-cf::before { content: '@ '; color: var(--text-muted); }
+
+.elo-section {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.elo-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 56px;
+  color: var(--accent);
+  text-shadow: 0 0 40px rgba(0,255,136,0.4);
+  line-height: 1;
+}
+
+.elo-meta { padding-bottom: 8px; }
+.elo-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.elo-tier {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.wl-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.wl-cell {
+  background: var(--bg-primary);
+  padding: 14px;
+  text-align: center;
+}
+
+.wl-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.wl-cell:first-child .wl-num { color: var(--accent); }
+.wl-cell:last-child .wl-num { color: var(--danger); }
+
+.wl-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+/* Battle controls */
+.battle-controls {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+}
+
+.battle-controls::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 20px;
+  width: 40px; height: 2px;
+  background: var(--accent);
+}
+
+.battle-controls-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.battle-actions {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-create {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-create::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s;
+}
+
+.btn-create:hover::after { transform: translateX(100%); }
+.btn-create:hover { background: var(--accent-bright); }
+
+.btn-join {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  border: 1px solid var(--border-bright);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-join:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Main content */
+.main-content { display: flex; flex-direction: column; gap: 24px; }
+
+/* Leaderboard */
+.rank-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: var(--text-muted);
+  width: 40px;
+}
+
+.rank-1 .rank-num { color: #ffd700; }
+.rank-2 .rank-num { color: #c0c0c0; }
+.rank-3 .rank-num { color: #cd7f32; }
+
+.cf-link {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-decoration: none;
+}
+.cf-link:hover { color: var(--accent); }
+
+.elo-cell {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.current-user-row td { background: var(--accent-glow) !important; }
+.current-user-row td:first-child { border-left: 2px solid var(--accent); }
+
+/* Live battles indicator */
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── ELO Color Classes ── */
+.elo-gray    { color: #808080; }
+.elo-green   { color: #00aa00; }
+.elo-cyan    { color: #03a89e; }
+.elo-blue    { color: #0000ff; }
+.elo-purple  { color: #aa00aa; }
+.elo-yellow  { color: #bbbb00; }
+.elo-red     { color: #ff0000; }
+.elo-legendary .handle-first { color: #ffffff; }
+.elo-legendary .handle-rest  { color: #ff0000; }
+.elo-legendary {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.legend-rings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px; height: 14px;
+  position: relative;
+  flex-shrink: 0;
+}
+.legend-rings::before,
+.legend-rings::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid #ff0000;
+}
+.legend-rings::before { width: 14px; height: 14px; opacity: 0.5; }
+.legend-rings::after  { width: 8px;  height: 8px;  opacity: 0.9; }
+.legend-dot {
+  width: 4px; height: 4px;
+  background: #ff0000;
+  border-radius: 50%;
+  position: absolute;
+}
+
+/* ── Create Battle Modal ── */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 2px;
+  background: var(--border-bright);
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.slider-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: var(--accent);
+  min-width: 40px;
+  text-align: right;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.option-btn {
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.option-btn.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+/* Room code display */
+.room-code-display {
+  text-align: center;
+  padding: 20px;
+}
+
+.room-code {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  color: var(--accent);
+  letter-spacing: 8px;
+  text-shadow: 0 0 40px rgba(0,255,136,0.5);
+}
+
+.room-code-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.waiting-anim {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.waiting-dots span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: dot-bounce 1.2s ease-in-out infinite;
+  margin: 0 2px;
+}
+
+.waiting-dots span:nth-child(2) { animation-delay: 0.2s; }
+.waiting-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div id="toast-container"></div>
+
+<!-- Nav -->
+<nav class="topnav">
+  <div class="nav-logo">CODE<span>BLITZ</span></div>
+  <div class="nav-links">
+    <a class="nav-link active" href="/dashboard.html">Dashboard</a>
+    <a class="nav-link" href="/dashboard.html#leaderboard">Leaderboard</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-elo-label">ELO</span>
+    <div class="nav-elo" id="nav-elo">—</div>
+    <a class="nav-user" id="nav-user" href="#" onclick="goToProfile(event)" style="cursor:pointer; color: var(--text-secondary); text-decoration:none; border-bottom: 1px dashed var(--border-bright); padding-bottom:1px;"></a>
+    <button class="btn-nav" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page-content">
+  <div style="margin-top: 8px;">
+    <div class="section-header">
+      <div class="section-title">ARENA</div>
+      <div class="section-sub">Your competitive hub</div>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="profile-card">
+        <div class="profile-glow"></div>
+        <div class="profile-name" id="profile-name">—</div>
+        <div class="profile-cf" id="profile-cf">—</div>
+        <div class="elo-section">
+          <div class="elo-num" id="profile-elo">—</div>
+          <div class="elo-meta">
+            <div class="elo-label">ELO Rating</div>
+            <div class="elo-tier" id="elo-tier" style="color: var(--accent)">—</div>
+          </div>
+        </div>
+        <div class="wl-row">
+          <div class="wl-cell">
+            <div class="wl-num" id="profile-wins">—</div>
+            <div class="wl-label">Wins</div>
+          </div>
+          <div class="wl-cell">
+            <div class="wl-num" id="profile-losses">—</div>
+            <div class="wl-label">Losses</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="battle-controls">
+        <div class="battle-controls-header">⚡ Battle Mode</div>
+        <div class="battle-actions">
+          <button class="btn-create" onclick="openCreateModal()">+ CREATE BATTLE</button>
+          <button class="btn-join" onclick="openJoinModal()">→ JOIN BATTLE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Leaderboard -->
+      <div class="card" id="leaderboard">
+        <div class="card-header">
+          <div class="card-title">🏆 Global Leaderboard</div>
+          <div class="live-indicator">
+            <span class="pulse-dot"></span>
+            <span>Live Rankings</span>
+          </div>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 60px">#</th>
+                <th>Player</th>
+                <th>Codeforces</th>
+                <th>ELO</th>
+                <th>W/L</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+              <tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 32px;">
+                <span class="spinner"></span>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE BATTLE MODAL -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚡ CREATE BATTLE</div>
+      <button class="modal-close" onclick="closeModal('create-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="create-form-step">
+        <div class="form-group">
+          <label class="form-label">Number of Problems</label>
+          <div class="slider-row">
+            <input type="range" class="slider" id="num-problems" min="1" max="10" value="5"
+              oninput="document.getElementById('num-problems-val').textContent = this.value">
+            <div class="slider-val" id="num-problems-val">5</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Time Limit (minutes)</label>
+          <div class="slider-row">
+            <input type="range" class="slider" id="time-limit" min="5" max="120" value="30" step="5"
+              oninput="document.getElementById('time-limit-val').textContent = this.value">
+            <div class="slider-val" id="time-limit-val">30</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Scoring Mode</label>
+          <div class="option-grid">
+            <button class="option-btn selected" id="mode-first" onclick="selectMode('first_solve')">
+              ⚡ First Solve<br><span style="font-size:10px; color: var(--text-muted)">First to solve moves both on</span>
+            </button>
+            <button class="option-btn" id="mode-time" onclick="selectMode('time_based')">
+              ⏱ Both Solve<br><span style="font-size:10px; color: var(--text-muted)">Both solve each problem</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Problem Rating Range</label>
+          <div class="form-row">
+            <div>
+              <label class="form-label" style="font-size:9px">Min Rating</label>
+              <select class="form-select" id="min-rating">
+                <option value="800">800</option>
+                <option value="900">900</option>
+                <option value="1000">1000</option>
+                <option value="1100">1100</option>
+                <option value="1200" selected>1200</option>
+                <option value="1400">1400</option>
+                <option value="1600">1600</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:9px">Max Rating</label>
+              <select class="form-select" id="max-rating">
+                <option value="1200">1200</option>
+                <option value="1400">1400</option>
+                <option value="1600" selected>1600</option>
+                <option value="1800">1800</option>
+                <option value="2000">2000</option>
+                <option value="2200">2200</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-accent" style="width:100%; justify-content: center;" onclick="createBattle()">
+          <span id="create-btn-text">CREATE ROOM</span>
+        </button>
+      </div>
+
+      <div id="create-waiting-step" style="display:none;">
+        <div class="room-code-display">
+          <div style="font-size: 11px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;">Room Code</div>
+          <div class="room-code" id="room-code-display">——</div>
+          <div class="room-code-hint">Share this code with your opponent</div>
+          <button onclick="copyRoomCode()" style="margin-top: 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 8px 20px; font-family: 'JetBrains Mono'; font-size: 11px; cursor: pointer; letter-spacing: 1px; transition: all 0.15s;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
+            📋 COPY CODE
+          </button>
+        </div>
+        <div class="waiting-anim">
+          <span>Waiting for opponent</span>
+          <div class="waiting-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 16px;">
+          Make sure you're logged in to <a href="https://codeforces.com" target="_blank" style="color: var(--accent)">codeforces.com</a> before the battle starts!
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN BATTLE MODAL -->
+<div class="modal-overlay" id="join-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">→ JOIN BATTLE</div>
+      <button class="modal-close" onclick="closeModal('join-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Enter Room Code</label>
+        <input class="form-input" type="text" id="join-code" placeholder="e.g. AB3X9K" maxlength="6"
+          style="font-size: 24px; text-transform: uppercase; letter-spacing: 4px; text-align: center;"
+          oninput="this.value = this.value.toUpperCase()">
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 20px; padding: 12px; background: var(--bg-hover); border-left: 2px solid var(--accent-dim);">
+        ⚡ Make sure you're logged in to <a href="https://codeforces.com" target="_blank" style="color:var(--accent)">codeforces.com</a> before joining!
+      </div>
+      <div class="error-msg" id="join-error" style="display:none;"></div>
+      <button class="btn btn-accent" style="width:100%; justify-content: center;" onclick="joinBattle()">JOIN BATTLE</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const API = '';
+let token = localStorage.getItem('cb_token');
+let user = JSON.parse(localStorage.getItem('cb_user') || '{}');
+let currentRoomCode = null;
+let selectedScoringMode = 'first_solve';
+let socket = null;
+
+if (!token) window.location.href = '/';
+
+// ── ELO color helpers ──
+function eloColorClass(elo) {
+  if (elo < 1200) return 'elo-gray';
+  if (elo < 1400) return 'elo-green';
+  if (elo < 1600) return 'elo-cyan';
+  if (elo < 1800) return 'elo-blue';
+  if (elo < 2000) return 'elo-purple';
+  if (elo < 2200) return 'elo-yellow';
+  if (elo < 2400) return 'elo-red';
+  return 'elo-legendary';
+}
+
+function eloTierColor(elo) {
+  const cls = eloColorClass(elo);
+  const map = {
+    'elo-gray': '#808080', 'elo-green': '#00aa00', 'elo-cyan': '#03a89e',
+    'elo-blue': '#0000ff', 'elo-purple': '#aa00aa', 'elo-yellow': '#bbbb00',
+    'elo-red': '#ff0000', 'elo-legendary': '#ff0000'
+  };
+  return map[cls] || 'var(--accent)';
+}
+
+function renderHandleHTML(handle, elo) {
+  const cls = eloColorClass(elo);
+  if (cls === 'elo-legendary') {
+    const first = handle.charAt(0);
+    const rest = handle.slice(1);
+    return `<span class="elo-legendary"><span class="legend-rings"><span class="legend-dot"></span></span><span class="handle-first">${first}</span><span class="handle-rest">${rest}</span></span>`;
+  }
+  return `<span class="${cls}">@${handle}</span>`;
+}
+
+function renderEloNumber(elo) {
+  const cls = eloColorClass(elo);
+  if (cls === 'elo-legendary') return `<span style="color:#ff0000">${elo}</span>`;
+  return `<span class="${cls}">${elo}</span>`;
+}
+
+// Load user data
+async function loadUser() {
+  try {
+    const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { logout(); return; }
+    user = await res.json();
+    localStorage.setItem('cb_user', JSON.stringify(user));
+    updateNavAndProfile();
+  } catch { logout(); }
+}
+
+function updateNavAndProfile() {
+  const eloColor = eloTierColor(user.elo);
+  document.getElementById('nav-elo').textContent = user.elo;
+  document.getElementById('nav-elo').style.color = eloColor;
+  document.getElementById('nav-elo').style.borderColor = eloColor + '44';
+  document.getElementById('nav-user').textContent = '@' + user.cfHandle;
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('profile-cf').innerHTML = renderHandleHTML(user.cfHandle, user.elo);
+  document.getElementById('profile-cf').style.color = '';
+  document.getElementById('profile-elo').innerHTML = renderEloNumber(user.elo);
+  document.getElementById('profile-elo').style.color = '';
+  document.getElementById('profile-elo').style.textShadow = `0 0 40px ${eloColor}66`;
+  document.getElementById('profile-wins').textContent = user.wins || 0;
+  document.getElementById('profile-losses').textContent = user.losses || 0;
+  const tier = getEloTier(user.elo);
+  document.getElementById('elo-tier').textContent = tier;
+  document.getElementById('elo-tier').style.color = eloColor;
+}
+
+function goToProfile(e) {
+  e.preventDefault();
+  window.location.href = `/profile.html?handle=${user.cfHandle}`;
+}
+
+function getEloTier(elo) {
+  if (elo < 1200) return 'NEWBIE';
+  if (elo < 1400) return 'PUPIL';
+  if (elo < 1600) return 'SPECIALIST';
+  if (elo < 1800) return 'EXPERT';
+  if (elo < 2000) return 'CANDIDATE MASTER';
+  if (elo < 2200) return 'MASTER';
+  if (elo < 2400) return 'INTERNATIONAL MASTER';
+  if (elo < 2600) return 'GRANDMASTER';
+  return 'LEGENDARY GRANDMASTER';
+}
+
+// Load leaderboard
+async function loadLeaderboard() {
+  const res = await fetch('/api/leaderboard');
+  const data = await res.json();
+  const tbody = document.getElementById('leaderboard-body');
+  
+  tbody.innerHTML = data.map((u, i) => `
+    <tr class="${u.cfHandle === user.cfHandle ? 'current-user-row' : ''} rank-${i + 1}">
+      <td class="rank-num">${i + 1}</td>
+      <td><strong>${u.name}</strong>${u.cfHandle === user.cfHandle ? ' <span class="badge badge-green">YOU</span>' : ''}</td>
+      <td>${renderHandleHTML(u.cfHandle, u.elo)}</td>
+      <td class="elo-cell">${renderEloNumber(u.elo)}</td>
+      <td><span style="color: var(--accent)">${u.wins}W</span> / <span style="color: var(--danger)">${u.losses}L</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 24px;">No players yet</td></tr>';
+}
+
+// Modal helpers
+function openCreateModal() {
+  document.getElementById('create-form-step').style.display = 'block';
+  document.getElementById('create-waiting-step').style.display = 'none';
+  document.getElementById('create-modal').classList.add('open');
+}
+
+function openJoinModal() {
+  document.getElementById('join-modal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function selectMode(mode) {
+  selectedScoringMode = mode;
+  document.getElementById('mode-first').classList.toggle('selected', mode === 'first_solve');
+  document.getElementById('mode-time').classList.toggle('selected', mode === 'time_based');
+}
+
+// Create battle
+async function createBattle() {
+  const numProblems = parseInt(document.getElementById('num-problems').value);
+  const timeLimit = parseInt(document.getElementById('time-limit').value);
+  const minRating = parseInt(document.getElementById('min-rating').value);
+  const maxRating = parseInt(document.getElementById('max-rating').value);
+  
+  const btn = document.getElementById('create-btn-text');
+  btn.textContent = 'CREATING...';
+  
+  try {
+    const res = await fetch('/api/battle/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ numProblems, timeLimit, scoringMode: selectedScoringMode, minRating, maxRating })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error, 'error'); btn.textContent = 'CREATE ROOM'; return; }
+    
+    currentRoomCode = data.roomCode;
+    document.getElementById('room-code-display').textContent = data.roomCode;
+    document.getElementById('create-form-step').style.display = 'none';
+    document.getElementById('create-waiting-step').style.display = 'block';
+    
+    // Connect socket and wait for opponent
+    connectSocket(data.roomCode);
+  } catch {
+    showToast('Failed to create battle', 'error');
+    btn.textContent = 'CREATE ROOM';
+  }
+}
+
+// Join battle
+async function joinBattle() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (code.length < 4) return showErrorInline('join-error', 'Invalid room code');
+  
+  try {
+    const res = await fetch('/api/battle/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ roomCode: code })
+    });
+    const data = await res.json();
+    if (!res.ok) return showErrorInline('join-error', data.error);
+    
+    closeModal('join-modal');
+    connectSocket(code);
+  } catch {
+    showErrorInline('join-error', 'Connection error');
+  }
+}
+
+function showErrorInline(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function copyRoomCode() {
+  navigator.clipboard.writeText(currentRoomCode);
+  showToast('Room code copied!');
+}
+
+// Socket.io
+function connectSocket(roomCode) {
+  if (socket) socket.disconnect();
+  socket = io('https://codeblitz-laid.onrender.com');
+  
+  socket.on('connect', () => {
+    socket.emit('join_room', { roomCode, token });
+  });
+
+  socket.on('player_joined', (data) => {
+    showToast(`⚡ ${data.player.name} joined! Starting...`);
+    setTimeout(() => {
+      window.location.href = `/battle.html?room=${roomCode}`;
+    }, 800);
+  });
+
+  socket.on('battle_start', (data) => {
+    showToast('⚡ Battle starting!');
+    setTimeout(() => {
+      window.location.href = `/battle.html?room=${roomCode}`;
+    }, 800);
+  });
+
+  socket.on('error', (msg) => showToast(msg, 'error'));
+}
+
+// Utils
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type === 'error' ? 'error' : ''}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function logout() {
+  localStorage.removeItem('cb_token');
+  localStorage.removeItem('cb_user');
+  window.location.href = '/';
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => { if (e.target === el) el.classList.remove('open'); });
+});
+
+loadUser();
+loadLeaderboard();
+setInterval(loadLeaderboard, 30000);
+
+// Handle hash
+if (window.location.hash === '#leaderboard') {
+  document.getElementById('leaderboard').scrollIntoView();
+}
+</script>
+</body>
+</html>
