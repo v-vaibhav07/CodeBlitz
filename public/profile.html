@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeBlitz — Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.grid-bg {
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: 0; pointer-events: none;
+}
+.page-content { position: relative; z-index: 1; }
+
+/* ── ELO Colors ── */
+.elo-gray    { color: #808080; }
+.elo-green   { color: #00aa00; }
+.elo-cyan    { color: #03a89e; }
+.elo-blue    { color: #0000ff; }
+.elo-purple  { color: #aa00aa; }
+.elo-yellow  { color: #bbbb00; }
+.elo-red     { color: #ff0000; }
+.elo-legendary .handle-first { color: #ffffff; }
+.elo-legendary .handle-rest  { color: #ff0000; }
+.elo-legendary { display: inline-flex; align-items: center; gap: 4px; }
+.legend-rings {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; position: relative; flex-shrink: 0;
+}
+.legend-rings::before, .legend-rings::after {
+  content: ''; position: absolute; border-radius: 50%; border: 1.5px solid #ff0000;
+}
+.legend-rings::before { width: 14px; height: 14px; opacity: 0.5; }
+.legend-rings::after  { width: 8px;  height: 8px;  opacity: 0.9; }
+.legend-dot { width: 4px; height: 4px; background: #ff0000; border-radius: 50%; position: absolute; }
+
+/* ── Profile Hero ── */
+.profile-hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 40px;
+  align-items: center;
+  padding: 48px 0 40px;
+}
+
+.avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.avatar-ring {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  padding: 3px;
+  position: relative;
+}
+
+.avatar-ring::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--rank-color, var(--accent));
+  box-shadow: 0 0 20px var(--rank-color, var(--accent)), inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+.avatar-img {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-card);
+}
+
+.avatar-placeholder {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 48px;
+  color: var(--text-muted);
+}
+
+.profile-info { display: flex; flex-direction: column; gap: 6px; }
+
+.profile-display-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 48px;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.profile-handle-line {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.profile-handle-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.profile-handle-link:hover { opacity: 0.75; }
+
+.profile-tier-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border: 1px solid;
+  opacity: 0.85;
+}
+
+.profile-joined {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Stats Row ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+.stat-cell {
+  background: var(--bg-card);
+  padding: 24px 20px;
+  text-align: center;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.stat-cell:hover { background: var(--bg-hover); }
+
+.stat-cell::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.stat-cell:hover::before { opacity: 1; }
+
+.stat-big {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 42px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.stat-lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* ── ELO Graph Card ── */
+.graph-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.graph-card::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 20px;
+  width: 40px; height: 2px;
+  background: var(--accent);
+}
+
+.graph-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.graph-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.graph-elo-current {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.graph-body {
+  padding: 24px;
+  position: relative;
+}
+
+/* SVG chart */
+#elo-chart {
+  width: 100%;
+  height: 260px;
+  display: block;
+  overflow: visible;
+}
+
+/* rank band legend */
+.rank-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding: 0 24px 20px;
+}
+
+.rank-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.rank-legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* ── No data state ── */
+.no-data {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-hover) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 2px;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 700px) {
+  .profile-hero { grid-template-columns: 1fr; gap: 20px; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .stats-grid .stat-cell:nth-child(4),
+  .stats-grid .stat-cell:nth-child(5) { grid-column: span 1; }
+}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div id="toast-container"></div>
+
+<!-- Nav -->
+<nav class="topnav">
+  <div class="nav-logo">CODE<span>BLITZ</span></div>
+  <div class="nav-links">
+    <a class="nav-link" href="/dashboard.html">← Dashboard</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-elo-label">ELO</span>
+    <div class="nav-elo" id="nav-elo">—</div>
+    <span class="nav-user" id="nav-user" style="font-size:12px; color:var(--text-secondary)"></span>
+    <button class="btn-nav" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page-content">
+  <div class="max-width-wrap" style="max-width:1100px; margin:0 auto; padding:80px 32px 60px;">
+
+    <!-- Profile Hero -->
+    <div class="profile-hero" id="profile-hero">
+      <div class="avatar-wrap">
+        <div class="avatar-ring" id="avatar-ring">
+          <div class="avatar-placeholder" id="avatar-placeholder">?</div>
+        </div>
+      </div>
+      <div class="profile-info">
+        <div class="profile-display-name skeleton" id="profile-display-name" style="width:260px; height:48px; border-radius:2px;">&nbsp;</div>
+        <div class="profile-handle-line" id="profile-handle-line">
+          <div class="skeleton" style="width:180px; height:20px; border-radius:2px;">&nbsp;</div>
+        </div>
+        <div class="profile-joined skeleton" id="profile-joined" style="width:140px; height:14px; border-radius:2px; margin-top:4px;">&nbsp;</div>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-cell">
+        <div class="stat-big" id="stat-elo">—</div>
+        <div class="stat-lbl">ELO Rating</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-big" style="color: var(--accent)" id="stat-wins">—</div>
+        <div class="stat-lbl">Wins</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-big" style="color: var(--danger)" id="stat-losses">—</div>
+        <div class="stat-lbl">Losses</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-big" style="color: var(--info)" id="stat-solved">—</div>
+        <div class="stat-lbl">Problems Solved</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-big" style="color: var(--warning)" id="stat-winrate">—</div>
+        <div class="stat-lbl">Win Rate</div>
+      </div>
+    </div>
+
+    <!-- ELO Progress Graph -->
+    <div class="graph-card">
+      <div class="graph-header">
+        <div class="graph-title">⚡ ELO Progress</div>
+        <div class="graph-elo-current" id="graph-elo-label">—</div>
+      </div>
+      <div class="graph-body">
+        <svg id="elo-chart" viewBox="0 0 900 260" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#00ff88" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#00ff88" stop-opacity="0.02"/>
+            </linearGradient>
+            <!-- Clip path so bands don't exceed chart area -->
+            <clipPath id="chartClip">
+              <rect x="0" y="0" width="900" height="260"/>
+            </clipPath>
+          </defs>
+          <!-- Rank colored bands will be injected here -->
+          <g id="rank-bands" clip-path="url(#chartClip)"></g>
+          <!-- Grid lines -->
+          <g id="grid-lines"></g>
+          <!-- Area fill -->
+          <path id="area-path" fill="url(#lineGrad)"/>
+          <!-- Line -->
+          <path id="line-path" fill="none" stroke="#00ff88" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <!-- Dots -->
+          <g id="data-dots"></g>
+          <!-- Y axis labels -->
+          <g id="y-labels"></g>
+          <!-- X axis labels -->
+          <g id="x-labels"></g>
+        </svg>
+      </div>
+      <div class="rank-legend" id="rank-legend"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const RANK_BANDS = [
+  { min: 0,    max: 1200, label: 'Newbie',               color: '#808080' },
+  { min: 1200, max: 1400, label: 'Pupil',                color: '#00aa00' },
+  { min: 1400, max: 1600, label: 'Specialist',           color: '#03a89e' },
+  { min: 1600, max: 1800, label: 'Expert',               color: '#0000ff' },
+  { min: 1800, max: 2000, label: 'Candidate Master',     color: '#aa00aa' },
+  { min: 2000, max: 2200, label: 'Master',               color: '#bbbb00' },
+  { min: 2200, max: 2400, label: 'Intl. Master',         color: '#ff8c00' },
+  { min: 2400, max: 2600, label: 'Grandmaster',          color: '#ff0000' },
+  { min: 2600, max: 9999, label: 'Legendary GM',         color: '#ff0000' },
+];
+
+function eloColor(elo) {
+  if (elo < 1200) return '#808080';
+  if (elo < 1400) return '#00aa00';
+  if (elo < 1600) return '#03a89e';
+  if (elo < 1800) return '#0000ff';
+  if (elo < 2000) return '#aa00aa';
+  if (elo < 2200) return '#bbbb00';
+  if (elo < 2400) return '#ff8c00';
+  if (elo < 2600) return '#ff0000';
+  return '#ff0000';
+}
+
+function eloTier(elo) {
+  if (elo < 1200) return 'NEWBIE';
+  if (elo < 1400) return 'PUPIL';
+  if (elo < 1600) return 'SPECIALIST';
+  if (elo < 1800) return 'EXPERT';
+  if (elo < 2000) return 'CANDIDATE MASTER';
+  if (elo < 2200) return 'MASTER';
+  if (elo < 2400) return 'INTERNATIONAL MASTER';
+  if (elo < 2600) return 'GRANDMASTER';
+  return 'LEGENDARY GRANDMASTER';
+}
+
+function renderHandleHTML(handle, elo) {
+  if (elo >= 2400) {
+    const first = handle.charAt(0);
+    const rest = handle.slice(1);
+    return `<span class="elo-legendary"><span class="legend-rings"><span class="legend-dot"></span></span><span class="handle-first">${first}</span><span class="handle-rest">${rest}</span></span>`;
+  }
+  const map = {
+    0: 'elo-gray', 1200: 'elo-green', 1400: 'elo-cyan',
+    1600: 'elo-blue', 1800: 'elo-purple', 2000: 'elo-yellow', 2200: 'elo-red'
+  };
+  let cls = 'elo-gray';
+  for (const [threshold, c] of Object.entries(map)) {
+    if (elo >= Number(threshold)) cls = c;
+  }
+  return `<span class="${cls}">@${handle}</span>`;
+}
+
+// ── ELO SVG Chart ────────────────────────────────────────────────────────────
+
+function drawEloChart(history) {
+  const PAD = { top: 16, right: 24, bottom: 36, left: 56 };
+  const W = 900, H = 260;
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  const elos = history.map(h => h.elo);
+  const rawMin = Math.min(...elos);
+  const rawMax = Math.max(...elos);
+  const margin = Math.max(100, (rawMax - rawMin) * 0.25);
+  const yMin = Math.max(0,    Math.floor((rawMin - margin) / 100) * 100);
+  const yMax =                Math.ceil((rawMax  + margin) / 100) * 100;
+  const yRange = yMax - yMin;
+
+  function xOf(i) { return PAD.left + (history.length <= 1 ? cW / 2 : (i / (history.length - 1)) * cW); }
+  function yOf(v) { return PAD.top + cH - ((v - yMin) / yRange) * cH; }
+
+  // ── Rank bands ──
+  const bandsEl = document.getElementById('rank-bands');
+  bandsEl.innerHTML = '';
+  for (const band of RANK_BANDS) {
+    const bandTop    = Math.max(yMin, band.min);
+    const bandBottom = Math.min(yMax, band.max);
+    if (bandTop >= bandBottom) continue;
+    const y1 = yOf(bandBottom);
+    const y2 = yOf(bandTop);
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', PAD.left);
+    rect.setAttribute('y', y1);
+    rect.setAttribute('width', cW);
+    rect.setAttribute('height', Math.max(0, y2 - y1));
+    rect.setAttribute('fill', band.color);
+    rect.setAttribute('opacity', '0.08');
+    bandsEl.appendChild(rect);
+
+    // Band label on right edge
+    const midY = (y1 + y2) / 2;
+    if (y2 - y1 > 18) {
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', PAD.left + cW - 6);
+      txt.setAttribute('y', midY + 4);
+      txt.setAttribute('text-anchor', 'end');
+      txt.setAttribute('fill', band.color);
+      txt.setAttribute('opacity', '0.55');
+      txt.setAttribute('font-size', '9');
+      txt.setAttribute('font-family', 'JetBrains Mono, monospace');
+      txt.setAttribute('letter-spacing', '1');
+      txt.textContent = band.label.toUpperCase();
+      bandsEl.appendChild(txt);
+    }
+  }
+
+  // ── Grid lines (horizontal) ──
+  const gridEl = document.getElementById('grid-lines');
+  gridEl.innerHTML = '';
+  const step = yRange <= 400 ? 100 : yRange <= 800 ? 200 : 400;
+  for (let v = Math.ceil(yMin / step) * step; v <= yMax; v += step) {
+    const y = yOf(v);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', PAD.left); line.setAttribute('x2', PAD.left + cW);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#1a2530'); line.setAttribute('stroke-width', '1');
+    gridEl.appendChild(line);
+  }
+
+  // ── Y axis labels ──
+  const yLabelsEl = document.getElementById('y-labels');
+  yLabelsEl.innerHTML = '';
+  for (let v = Math.ceil(yMin / step) * step; v <= yMax; v += step) {
+    const y = yOf(v);
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', PAD.left - 8);
+    txt.setAttribute('y', y + 4);
+    txt.setAttribute('text-anchor', 'end');
+    txt.setAttribute('fill', '#4a6070');
+    txt.setAttribute('font-size', '10');
+    txt.setAttribute('font-family', 'JetBrains Mono, monospace');
+    txt.textContent = v;
+    yLabelsEl.appendChild(txt);
+  }
+
+  if (history.length < 2) {
+    // Not enough data — show single dot
+    document.getElementById('area-path').setAttribute('d', '');
+    document.getElementById('line-path').setAttribute('d', '');
+    const dotsEl = document.getElementById('data-dots');
+    dotsEl.innerHTML = '';
+    if (history.length === 1) {
+      const cx = xOf(0), cy = yOf(history[0].elo);
+      const c = eloColor(history[0].elo);
+      dotsEl.innerHTML = `<circle cx="${cx}" cy="${cy}" r="5" fill="${c}" stroke="${c}" stroke-width="2"/>`;
+    }
+    return;
+  }
+
+  // ── Path ──
+  const pts = history.map((h, i) => [xOf(i), yOf(h.elo)]);
+  const linePts = pts.map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`)).join(' ');
+  const areaPts = linePts + ` L${pts[pts.length-1][0]},${PAD.top + cH} L${pts[0][0]},${PAD.top + cH} Z`;
+
+  document.getElementById('line-path').setAttribute('d', linePts);
+  document.getElementById('area-path').setAttribute('d', areaPts);
+
+  // ── Dots ──
+  const dotsEl = document.getElementById('data-dots');
+  dotsEl.innerHTML = history.map((h, i) => {
+    const [cx, cy] = pts[i];
+    const c = eloColor(h.elo);
+    const date = new Date(h.date).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+    return `
+      <circle cx="${cx}" cy="${cy}" r="4" fill="${c}" stroke="#080c0f" stroke-width="2" opacity="0.9">
+        <title>${h.elo} ELO · ${date}</title>
+      </circle>`;
+  }).join('');
+
+  // ── X axis labels (up to 8 evenly spaced) ──
+  const xLabelsEl = document.getElementById('x-labels');
+  xLabelsEl.innerHTML = '';
+  const labelCount = Math.min(history.length, 8);
+  const labelStep = Math.ceil(history.length / labelCount);
+  for (let i = 0; i < history.length; i += labelStep) {
+    const [x] = pts[i];
+    const date = new Date(history[i].date).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', x);
+    txt.setAttribute('y', PAD.top + cH + 20);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('fill', '#4a6070');
+    txt.setAttribute('font-size', '10');
+    txt.setAttribute('font-family', 'JetBrains Mono, monospace');
+    txt.textContent = date;
+    xLabelsEl.appendChild(txt);
+  }
+}
+
+// ── Rank legend ──────────────────────────────────────────────────────────────
+function buildLegend() {
+  const el = document.getElementById('rank-legend');
+  el.innerHTML = RANK_BANDS.map(b => `
+    <div class="rank-legend-item">
+      <div class="rank-legend-dot" style="background:${b.color}; opacity:0.7;"></div>
+      <span>${b.label} (${b.min}${b.max < 9999 ? '–' + b.max : '+'})</span>
+    </div>
+  `).join('');
+}
+
+// ── Load profile data ────────────────────────────────────────────────────────
+
+const handle = new URLSearchParams(window.location.search).get('handle');
+if (!handle) window.location.href = '/dashboard.html';
+document.title = `CodeBlitz — ${handle}`;
+
+const token = localStorage.getItem('cb_token');
+const loggedUser = JSON.parse(localStorage.getItem('cb_user') || '{}');
+
+// Nav
+// document.getElementById('nav-elo').textContent = loggedUser.elo || '—';
+const navEloEl = document.getElementById('nav-elo');
+navEloEl.textContent = loggedUser.elo || '—';
+navEloEl.style.color = eloColor(loggedUser.elo);
+document.getElementById('nav-user').textContent = '@' + (loggedUser.cfHandle || '');
+
+async function loadProfile() {
+  try {
+    const res = await fetch(`/api/profile/${handle}`);
+    if (!res.ok) { showToast('Profile not found', 'error'); return; }
+    const data = await res.json();
+
+    const color = eloColor(data.elo);
+    const tier  = eloTier(data.elo);
+
+    // Avatar ring color
+    document.getElementById('avatar-ring').style.setProperty('--rank-color', color);
+
+    // Fetch CF avatar
+    try {
+      const cfRes = await fetch(`https://codeforces.com/api/user.info?handles=${data.cfHandle}`);
+      const cfData = await cfRes.json();
+      if (cfData.status === 'OK') {
+        const cfUser = cfData.result[0];
+        const avatarUrl = cfUser.titlePhoto || cfUser.avatar;
+        if (avatarUrl) {
+          const img = document.createElement('img');
+          img.className = 'avatar-img';
+          img.alt = data.cfHandle;
+          // CF returns protocol-relative URLs sometimes
+          img.src = avatarUrl.startsWith('//') ? 'https:' + avatarUrl : avatarUrl;
+          img.onerror = () => {}; // keep placeholder on error
+          document.getElementById('avatar-ring').replaceChild(img, document.getElementById('avatar-placeholder'));
+        }
+      }
+    } catch {}
+
+    // Display name
+    const nameEl = document.getElementById('profile-display-name');
+    nameEl.classList.remove('skeleton');
+    nameEl.style.width = ''; nameEl.style.height = '';
+    nameEl.textContent = data.name;
+
+    // Handle + tier badge
+    const handleLine = document.getElementById('profile-handle-line');
+    handleLine.innerHTML = `
+      <a href="https://codeforces.com/profile/${data.cfHandle}" target="_blank" class="profile-handle-link">
+        ${renderHandleHTML(data.cfHandle, data.elo)}
+      </a>
+      <span class="profile-tier-badge" style="color:${color}; border-color:${color}44;">${tier}</span>
+    `;
+
+    // Joined
+    const joinedEl = document.getElementById('profile-joined');
+    joinedEl.classList.remove('skeleton');
+    joinedEl.style.width = ''; joinedEl.style.height = '';
+    joinedEl.textContent = `Member since ${new Date(data.createdAt).toLocaleDateString('en', { year: 'numeric', month: 'long' })}`;
+
+    // Stats
+    document.getElementById('stat-elo').textContent = data.elo;
+    document.getElementById('stat-elo').style.color = color;
+    document.getElementById('stat-elo').style.textShadow = `0 0 20px ${color}66`;
+    document.getElementById('stat-wins').textContent = data.wins;
+    document.getElementById('stat-losses').textContent = data.losses;
+    document.getElementById('stat-solved').textContent = data.problemsSolved;
+    const total = data.wins + data.losses;
+    const wr = total > 0 ? Math.round((data.wins / total) * 100) : 0;
+    document.getElementById('stat-winrate').textContent = wr + '%';
+
+    // Graph header
+    document.getElementById('graph-elo-label').textContent = data.elo;
+    document.getElementById('graph-elo-label').style.color = color;
+
+    // ELO chart
+    buildLegend();
+    const history = data.eloHistory && data.eloHistory.length
+      ? data.eloHistory
+      : [{ elo: data.elo, date: data.createdAt || new Date() }];
+    drawEloChart(history);
+
+  } catch (e) {
+    showToast('Failed to load profile', 'error');
+  }
+}
+
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type === 'error' ? 'error' : ''}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function logout() {
+  localStorage.removeItem('cb_token');
+  localStorage.removeItem('cb_user');
+  window.location.href = '/';
+}
+
+loadProfile();
+</script>
+</body>
+</html>
