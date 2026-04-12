@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeBlitz — Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+body { overflow-x: hidden; }
+
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.battle-layout {
+  position: relative;
+  z-index: 1;
+  padding-top: 56px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Battle Header ── */
+.battle-header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 100px;
+  gap: 20px;
+  position: relative;
+}
+
+.battle-header::before {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--accent) 30%,
+    var(--accent) 70%, transparent 100%
+  );
+  opacity: 0.4;
+}
+
+.player-side {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-side.right {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.player-tag {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.player-name-big {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.player-cf-tag {
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.score-box {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 56px;
+  line-height: 1;
+  padding: 8px 28px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  transition: all 0.3s;
+}
+
+.score-box.p1 { color: var(--accent); border-right: none; }
+.score-box.p2 { color: var(--info); border-left: none; }
+
+.score-sep {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 32px;
+  color: var(--text-muted);
+  padding: 8px 8px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.score-box.lead { text-shadow: 0 0 30px currentColor; }
+
+/* ── Timer Bar ── */
+.timer-bar-wrap {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.timer-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  flex-shrink: 0;
+}
+
+.timer-track {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.timer-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 1s linear, background 0.5s;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.timer-fill.warning { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+.timer-fill.danger { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+.timer-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  color: var(--accent);
+  min-width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+  transition: color 0.3s;
+}
+
+.timer-time.warning { color: var(--warning); }
+.timer-time.danger { color: var(--danger); }
+
+/* ── Body ── */
+.battle-body {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  flex: 1;
+  gap: 0;
+}
+
+/* ── Problem Panel ── */
+.problem-panel {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  gap: 24px;
+}
+
+.problem-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.prob-dot {
+  width: 36px; height: 36px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: default;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.prob-dot.current {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+  box-shadow: 0 0 12px var(--accent-dim);
+}
+
+.prob-dot.solved-p1 { border-color: var(--accent); background: rgba(0,255,136,0.2); color: var(--accent); }
+.prob-dot.solved-p2 { border-color: var(--info); background: rgba(0,170,255,0.2); color: var(--info); }
+.prob-dot.solved-both { border-color: var(--warning); background: rgba(255,204,0,0.1); color: var(--warning); }
+
+.problem-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.problem-card::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: background 0.3s;
+}
+
+.problem-card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.problem-idx {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 40px;
+  color: var(--accent);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.problem-meta { flex: 1; }
+
+.problem-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.problem-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.solve-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  letter-spacing: 3px;
+  text-decoration: none;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.solve-link:hover { background: var(--accent-bright); color: var(--bg-primary); }
+
+.problem-info-row {
+  padding: 16px 24px;
+  display: flex;
+  gap: 24px;
+}
+
+.prob-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prob-info-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.prob-info-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+/* Solve status in problem card */
+.solver-status {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 20px;
+}
+
+.solver-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  flex: 1;
+  transition: all 0.3s;
+}
+
+.solver-pill.solved {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.solver-pill.solved-p2 {
+  border-color: var(--info);
+  background: rgba(0,170,255,0.05);
+}
+
+.solver-pill-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  flex: 1;
+}
+
+.solver-status-icon {
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+/* Waiting overlay on problem */
+.problem-waiting {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+}
+
+/* ── Right Panel ── */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-section {
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel-section-title {
+  padding: 14px 20px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Live feed */
+.live-feed {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.feed-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  animation: feed-in 0.3s ease-out;
+}
+
+@keyframes feed-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.feed-item:last-child { border-bottom: none; }
+
+.feed-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.feed-dot.green { background: var(--accent); }
+.feed-dot.blue { background: var(--info); }
+.feed-dot.yellow { background: var(--warning); }
+.feed-dot.red { background: var(--danger); }
+
+.feed-text {
+  font-size: 11px;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.feed-time {
+  font-size: 10px;
+  color: var(--text-ghost);
+  flex-shrink: 0;
+}
+
+/* Problems list in right panel */
+.problems-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.problem-list-item {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.problem-list-item:hover { background: var(--bg-hover); }
+.problem-list-item.active { background: var(--accent-glow); border-left: 2px solid var(--accent); }
+
+.pli-idx {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  color: var(--text-muted);
+  width: 24px;
+}
+
+.pli-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pli-rating {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Battle End Overlay ── */
+.battle-end-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 15, 0.92);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  backdrop-filter: blur(8px);
+}
+
+.battle-end-overlay.show { display: flex; }
+
+.battle-end-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  animation: modal-in 0.4s ease-out;
+}
+
+.battle-end-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+.end-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 64px;
+  letter-spacing: 4px;
+  padding: 40px 40px 0;
+  line-height: 1;
+}
+
+.end-winner-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 32px;
+  color: var(--accent);
+  text-shadow: 0 0 40px rgba(0,255,136,0.5);
+  letter-spacing: 2px;
+  padding: 12px 40px;
+}
+
+.end-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  margin: 24px 0;
+}
+
+.end-score-cell {
+  background: var(--bg-card);
+  padding: 20px;
+  text-align: center;
+}
+
+.end-score-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 48px;
+  line-height: 1;
+}
+
+.end-score-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.elo-change {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  padding: 0 40px 20px;
+  letter-spacing: 1px;
+}
+
+.end-actions {
+  padding: 24px 40px 40px;
+  display: flex;
+  gap: 12px;
+}
+
+/* Confetti-like particles */
+.particle {
+  position: fixed;
+  width: 6px; height: 6px;
+  pointer-events: none;
+  z-index: 501;
+  animation: particle-fall linear forwards;
+}
+
+@keyframes particle-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Poll indicator */
+.poll-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-ghost);
+}
+
+/* ── ELO Color Classes ── */
+.elo-gray    { color: #808080; }
+.elo-green   { color: #00aa00; }
+.elo-cyan    { color: #03a89e; }
+.elo-blue    { color: #0000ff; }
+.elo-purple  { color: #aa00aa; }
+.elo-yellow  { color: #bbbb00; }
+.elo-orange  { color: #ff8c00; }
+.elo-red     { color: #ff0000; }
+
+/* Legendary handle: first letter white, rest red, with concentric rings */
+.elo-legendary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.elo-legendary .legend-rings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px; height: 14px;
+  position: relative;
+  flex-shrink: 0;
+}
+.elo-legendary .legend-rings::before,
+.elo-legendary .legend-rings::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid #ff0000;
+}
+.elo-legendary .legend-rings::before { width: 14px; height: 14px; opacity: 0.5; }
+.elo-legendary .legend-rings::after  { width: 8px;  height: 8px;  opacity: 0.9; }
+.elo-legendary .legend-dot {
+  width: 4px; height: 4px;
+  background: #ff0000;
+  border-radius: 50%;
+  position: absolute;
+}
+.elo-legendary .handle-first { color: #ffffff; }
+.elo-legendary .handle-rest  { color: #ff0000; }
+
+/* ── Solve notification banner ── */
+.solve-notify {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 300;
+  padding: 14px 28px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  min-width: 340px;
+  max-width: 600px;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+}
+.solve-notify.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.solve-notify.mine {
+  background: rgba(0,255,136,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.solve-notify.opponent {
+  background: rgba(0,170,255,0.10);
+  border-color: var(--info);
+  color: var(--info);
+}
+.solve-notify-icon { font-size: 20px; flex-shrink: 0; }
+.solve-notify-pts {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  margin-left: auto;
+  padding-left: 16px;
+  flex-shrink: 0;
+}
+
+/* Points badge on problem card */
+.points-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  color: var(--warning);
+  text-shadow: 0 0 12px rgba(255,204,0,0.4);
+  letter-spacing: 1px;
+}
+
+.poll-dot {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: poll-pulse 8s ease-in-out infinite;
+}
+
+@keyframes poll-pulse {
+  0%, 90%, 100% { opacity: 0.3; transform: scale(0.8); }
+  5%, 85% { opacity: 0.3; transform: scale(0.8); }
+  92% { opacity: 1; transform: scale(1.2); }
+}
+
+@media (max-width: 900px) {
+  .battle-body { grid-template-columns: 1fr; }
+  .right-panel { display: none; }
+  .battle-header { grid-template-columns: 1fr; height: auto; padding: 16px; }
+  .score-display { justify-content: center; }
+  .player-side.right { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div id="toast-container"></div>
+<div class="solve-notify" id="solve-notify">
+  <span class="solve-notify-icon" id="solve-notify-icon">✓</span>
+  <span id="solve-notify-text"></span>
+  <span class="solve-notify-pts" id="solve-notify-pts"></span>
+</div>
+
+<!-- Nav -->
+<nav class="topnav">
+  <div class="nav-logo">CODE<span>BLITZ</span></div>
+  <div class="nav-links">
+    <span class="nav-link" style="color: var(--text-muted)">
+      <span class="pulse-dot" style="margin-right: 6px"></span>
+      LIVE BATTLE
+    </span>
+  </div>
+  <div class="nav-right">
+    <div class="poll-indicator" id="poll-indicator">
+      <div class="poll-dot"></div>
+      <span>Polling CF</span>
+    </div>
+    <span class="nav-elo" id="nav-elo">—</span>
+  </div>
+</nav>
+
+<div class="battle-layout">
+  <!-- Header -->
+  <div class="battle-header">
+    <div class="player-side">
+      <div class="player-tag">Player 1</div>
+      <div class="player-name-big" id="p1-name">—</div>
+      <div class="player-cf-tag" id="p1-cf">—</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+      <div class="score-display">
+        <div class="score-box p1" id="p1-score">0</div>
+        <div class="score-sep">:</div>
+        <div class="score-box p2" id="p2-score">0</div>
+      </div>
+      <div style="font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;" id="battle-status-text">Connecting...</div>
+    </div>
+
+    <div class="player-side right">
+      <div class="player-tag">Player 2</div>
+      <div class="player-name-big" id="p2-name">—</div>
+      <div class="player-cf-tag" id="p2-cf">—</div>
+    </div>
+  </div>
+
+  <!-- Timer -->
+  <div class="timer-bar-wrap">
+    <span class="timer-label">Time</span>
+    <div class="timer-track">
+      <div class="timer-fill" id="timer-fill" style="width: 100%"></div>
+    </div>
+    <div class="timer-time" id="timer-display">--:--</div>
+  </div>
+
+  <!-- Body -->
+  <div class="battle-body">
+    <!-- Problem panel -->
+    <div class="problem-panel">
+      <div class="problem-nav" id="problem-nav"></div>
+
+      <div id="problem-display">
+        <div class="problem-waiting">
+          <div class="spinner" style="width: 28px; height: 28px; border-width: 3px; margin: 0 auto 16px;"></div>
+          <div style="color: var(--text-muted); font-size: 13px;">Waiting for battle to start...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="right-panel">
+      <div class="panel-section" style="flex: 0 0 auto;">
+        <div class="panel-section-title">
+          <span>⚡ Live Feed</span>
+          <span class="poll-indicator">
+            <div class="poll-dot"></div>
+            <span>auto-updating</span>
+          </span>
+        </div>
+        <div class="live-feed" id="live-feed">
+          <div class="feed-item">
+            <div class="feed-dot yellow"></div>
+            <div class="feed-text">Waiting for both players to join...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section-title" style="background: none;">
+        <span>📋 All Problems</span>
+      </div>
+      <div class="problems-list" id="problems-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Battle End -->
+<div class="battle-end-overlay" id="battle-end-overlay">
+  <div class="battle-end-card">
+    <div class="end-title" id="end-title">VICTORY</div>
+    <div class="end-winner-name" id="end-winner-name">—</div>
+    <div class="end-scores" id="end-scores"></div>
+    <div class="elo-change" id="elo-change-display"></div>
+    <div class="end-actions">
+      <a href="/dashboard.html" class="btn btn-accent" style="flex: 1; justify-content: center;">→ BACK TO LOBBY</a>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const token = localStorage.getItem('cb_token');
+const user = JSON.parse(localStorage.getItem('cb_user') || '{}');
+if (!token) window.location.href = '/';
+
+const roomCode = new URLSearchParams(window.location.search).get('room');
+if (!roomCode) window.location.href = '/dashboard.html';
+
+let battleData = null;
+let myPlayerIdx = -1;
+let timerInterval = null;
+let totalTime = 0;
+let startTime = null;
+
+document.getElementById('nav-elo').textContent = user.elo || '—';
+
+// ── ELO color helper ──
+function eloColorClass(elo) {
+  if (elo < 1200) return 'elo-gray';
+  if (elo < 1400) return 'elo-green';
+  if (elo < 1600) return 'elo-cyan';
+  if (elo < 1800) return 'elo-blue';
+  if (elo < 2000) return 'elo-purple';
+  if (elo < 2200) return 'elo-yellow';
+  if (elo < 2400) return 'elo-red';
+  return 'elo-legendary'; // 2400+
+}
+
+function renderHandle(handle, elo) {
+  if (!elo && elo !== 0) {
+    // No ELO info — plain
+    return `<span style="color:var(--accent)">@${handle}</span>`;
+  }
+  const cls = eloColorClass(elo);
+  if (cls === 'elo-legendary') {
+    const first = handle.charAt(0);
+    const rest = handle.slice(1);
+    return `<span class="elo-legendary">
+      <span class="legend-rings"><span class="legend-dot"></span></span>
+      <span class="handle-first">${first}</span><span class="handle-rest">${rest}</span>
+    </span>`;
+  }
+  return `<span class="${cls}">@${handle}</span>`;
+}
+
+// ── Solve notification banner ──
+let solveNotifyTimer = null;
+function showSolveNotify(isMe, solverName, problemName, pts) {
+  const el = document.getElementById('solve-notify');
+  const icon = document.getElementById('solve-notify-icon');
+  const text = document.getElementById('solve-notify-text');
+  const ptsEl = document.getElementById('solve-notify-pts');
+
+  el.className = 'solve-notify ' + (isMe ? 'mine' : 'opponent');
+  icon.textContent = isMe ? '✓' : '⚡';
+  text.textContent = isMe
+    ? `You solved "${problemName}"!`
+    : `${solverName} solved "${problemName}"`;
+  ptsEl.textContent = `+${pts} PTS`;
+
+  el.classList.add('show');
+  if (solveNotifyTimer) clearTimeout(solveNotifyTimer);
+  solveNotifyTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// Socket
+const socket = io('https://codeblitz-laid.onrender.com');
+
+socket.on('connect', () => {
+  socket.emit('join_room', { roomCode, token });
+  addFeed('Connected to battle room', 'yellow');
+});
+
+socket.on('battle_state', (battle) => {
+  battleData = battle;
+  initBattle(battle);
+});
+
+socket.on('battle_start', ({ battle }) => {
+  battleData = battle;
+  startTime = new Date(battle.startTime);
+  totalTime = battle.timeLimit * 60;
+  initBattle(battle);
+  startTimer();
+  addFeed('⚡ Battle started! Good luck!', 'green');
+  document.getElementById('battle-status-text').textContent = 'LIVE';
+});
+
+socket.on('battle_update', ({ scores, currentProblemIndex }) => {
+  if (!battleData) return;
+  scores.forEach(s => {
+    const idx = battleData.players.findIndex(p => p.cfHandle === s.cfHandle);
+    if (idx >= 0) battleData.players[idx].score = s.score;
+  });
+  battleData.currentProblemIndex = currentProblemIndex;
+  updateScores();
+  updateProblemNav();
+  renderCurrentProblem();
+});
+
+socket.on('problem_solved', ({ solver, solverName, problem, pointsEarned, scores }) => {
+  const isMe = solver === user.cfHandle;
+  const pts = pointsEarned || 1;
+  const color = isMe ? 'green' : 'blue';
+  addFeed(`✓ ${solverName} solved "${problem.name}" (+${pts} pts)`, color);
+  
+  // Update local scores
+  scores.forEach(s => {
+    const idx = battleData.players.findIndex(p => p.cfHandle === s.cfHandle);
+    if (idx >= 0) battleData.players[idx].score = s.score;
+  });
+  updateScores(true);
+  
+  // Show banner notification
+  showSolveNotify(isMe, solverName, problem.name, pts);
+  
+  if (isMe) {
+    showToast(`✓ Accepted! +${pts} points!`);
+  }
+});
+
+socket.on('next_problem', ({ problemIndex, problem }) => {
+  battleData.currentProblemIndex = problemIndex;
+  addFeed(`→ Moving to problem ${problemIndex + 1}: ${problem.name}`, 'yellow');
+  updateProblemNav();
+  renderCurrentProblem();
+});
+
+socket.on('battle_end', ({ winner, reason, eloChange, scores }) => {
+  clearInterval(timerInterval);
+  showBattleEnd(winner, reason, eloChange, scores);
+});
+
+socket.on('error', (msg) => {
+  addFeed('⚠ ' + msg, 'red');
+  showToast(msg, 'error');
+});
+
+socket.on('disconnect', () => {
+  addFeed('Connection lost. Reconnecting...', 'red');
+});
+
+// Init battle UI
+function initBattle(battle) {
+  const [p1, p2] = battle.players;
+
+  if (p1) {
+    document.getElementById('p1-name').textContent = p1.name;
+    document.getElementById('p1-cf').innerHTML = renderHandle(p1.cfHandle, p1.elo);
+  }
+  if (p2) {
+    document.getElementById('p2-name').textContent = p2.name;
+    document.getElementById('p2-cf').innerHTML = renderHandle(p2.cfHandle, p2.elo);
+  } else {
+    document.getElementById('p2-name').textContent = 'Waiting...';
+    document.getElementById('p2-cf').textContent = '—';
+  }
+
+  // Find my index
+  myPlayerIdx = battle.players.findIndex(p => p.cfHandle === user.cfHandle);
+
+  updateScores();
+  renderProblemsNav(battle.problems);
+  renderAllProblemsList(battle.problems);
+
+  if (battle.status === 'active') {
+    startTime = new Date(battle.startTime);
+    totalTime = battle.timeLimit * 60;
+    startTimer();
+    renderCurrentProblem();
+    document.getElementById('battle-status-text').textContent = 'LIVE';
+  }
+}
+
+function updateScores(flash = false) {
+  if (!battleData) return;
+  const [p1, p2] = battleData.players;
+  const s1 = p1?.score || 0;
+  const s2 = p2?.score || 0;
+  const box1 = document.getElementById('p1-score');
+  const box2 = document.getElementById('p2-score');
+  box1.textContent = s1;
+  box2.textContent = s2;
+  box1.classList.toggle('lead', s1 > s2);
+  box2.classList.toggle('lead', s2 > s1);
+  
+  if (flash) {
+    [box1, box2].forEach(b => {
+      b.style.transform = 'scale(1.1)';
+      setTimeout(() => b.style.transform = '', 300);
+    });
+  }
+}
+
+function renderProblemsNav(problems) {
+  const nav = document.getElementById('problem-nav');
+  nav.innerHTML = problems.map((p, i) => `
+    <div class="prob-dot" id="prob-dot-${i}" title="${p.name}">${i + 1}</div>
+  `).join('');
+}
+
+function updateProblemNav() {
+  if (!battleData) return;
+  const { problems, players, currentProblemIndex } = battleData;
+  
+  problems.forEach((p, i) => {
+    const dot = document.getElementById(`prob-dot-${i}`);
+    if (!dot) return;
+    const key = `${p.contestId}${p.index}`;
+    const p1Solved = players[0]?.solvedProblems?.includes(key);
+    const p2Solved = players[1]?.solvedProblems?.includes(key);
+    
+    dot.className = 'prob-dot';
+    if (i === currentProblemIndex) dot.classList.add('current');
+    if (p1Solved && p2Solved) dot.classList.add('solved-both');
+    else if (p1Solved) dot.classList.add('solved-p1');
+    else if (p2Solved) dot.classList.add('solved-p2');
+  });
+}
+
+function renderCurrentProblem() {
+  if (!battleData) return;
+  const { problems, players, currentProblemIndex, scoringMode } = battleData;
+  const prob = problems[currentProblemIndex];
+  if (!prob) return;
+
+  const key = `${prob.contestId}${prob.index}`;
+  const p1Solved = players[0]?.solvedProblems?.includes(key);
+  const p2Solved = players[1]?.solvedProblems?.includes(key);
+  const p1Name = players[0]?.name || '—';
+  const p2Name = players[1]?.name || '—';
+
+  document.getElementById('problem-display').innerHTML = `
+    <div class="problem-card">
+      <div class="problem-card-header">
+        <div class="problem-idx">${String.fromCharCode(64 + currentProblemIndex + 1)}</div>
+        <div class="problem-meta">
+          <div class="problem-name">${prob.name}</div>
+          <div class="problem-tags">
+            <span class="badge badge-yellow">★ ${prob.rating}</span>
+            <span class="badge badge-blue">${prob.contestId}${prob.index}</span>
+            <span class="badge badge-blue">CF Problem</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+          <a href="${prob.url}" target="_blank" class="solve-link">SOLVE ↗</a>
+          <div style="text-align:center;">
+            <div style="font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;">Points</div>
+            <div class="points-badge">${prob.points || 1} PTS</div>
+          </div>
+        </div>
+      </div>
+      <div class="problem-info-row">
+        <div class="prob-info-item">
+          <div class="prob-info-label">Problem</div>
+          <div class="prob-info-val">${currentProblemIndex + 1} / ${problems.length}</div>
+        </div>
+        <div class="prob-info-item">
+          <div class="prob-info-label">Rating</div>
+          <div class="prob-info-val" style="color: var(--warning)">${prob.rating}</div>
+        </div>
+        <div class="prob-info-item">
+          <div class="prob-info-label">Mode</div>
+          <div class="prob-info-val" style="font-size: 14px; letter-spacing: 1px;">${scoringMode === 'first_solve' ? 'FIRST SOLVE' : 'BOTH SOLVE'}</div>
+        </div>
+      </div>
+      <div class="solver-status">
+        <div class="solver-pill ${p1Solved ? 'solved' : ''}">
+          <div class="solver-status-icon" style="font-size:18px;">${p1Solved ? '✅' : '⏳'}</div>
+          <div class="solver-pill-name">${p1Name}</div>
+          <div style="font-size:10px;color:${p1Solved ? 'var(--accent)' : 'var(--text-muted)'};">
+            ${p1Solved ? 'SOLVED' : 'SOLVING...'}
+          </div>
+        </div>
+        <div class="solver-pill ${p2Solved ? 'solved-p2' : ''}">
+          <div class="solver-status-icon" style="font-size:18px;">${p2Solved ? '✅' : '⏳'}</div>
+          <div class="solver-pill-name">${p2Name}</div>
+          <div style="font-size:10px;color:${p2Solved ? 'var(--info)' : 'var(--text-muted)'};">
+            ${p2Solved ? 'SOLVED' : 'SOLVING...'}
+          </div>
+        </div>
+      </div>
+      <div style="padding: 12px 24px; background: var(--bg-primary); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted);">
+        ⚡ Make sure you're <strong style="color: var(--text-primary)">logged into codeforces.com</strong> · Submissions are checked every ~8 seconds
+      </div>
+    </div>
+  `;
+
+  updateProblemNav();
+}
+
+function renderAllProblemsList(problems) {
+  const list = document.getElementById('problems-list');
+  list.innerHTML = problems.map((p, i) => `
+    <div class="problem-list-item" id="pli-${i}">
+      <div class="pli-idx">${i + 1}</div>
+      <div class="pli-name">${p.name}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+        <div class="pli-rating">★${p.rating}</div>
+        <div style="font-size:10px;color:var(--warning);font-family:'JetBrains Mono', monospace;">${p.points || 1}pts</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Timer
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(updateTimer, 1000);
+  updateTimer();
+}
+
+function updateTimer() {
+  if (!startTime || !totalTime) return;
+  const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
+  const remaining = Math.max(0, totalTime - elapsed);
+  
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  const display = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  const pct = (remaining / totalTime) * 100;
+
+  const timerEl = document.getElementById('timer-display');
+  const fillEl = document.getElementById('timer-fill');
+  
+  timerEl.textContent = display;
+  fillEl.style.width = pct + '%';
+  
+  const isWarning = pct < 30;
+  const isDanger = pct < 10;
+  
+  timerEl.className = 'timer-time' + (isDanger ? ' danger' : isWarning ? ' warning' : '');
+  fillEl.className = 'timer-fill' + (isDanger ? ' danger' : isWarning ? ' warning' : '');
+
+  if (remaining === 0) clearInterval(timerInterval);
+}
+
+// Live feed
+function addFeed(text, color = 'green') {
+  const feed = document.getElementById('live-feed');
+  const now = new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
+  const item = document.createElement('div');
+  item.className = 'feed-item';
+  item.innerHTML = `
+    <div class="feed-dot ${color}"></div>
+    <div class="feed-text">${text}</div>
+    <div class="feed-time">${now}</div>
+  `;
+  feed.insertBefore(item, feed.firstChild);
+  
+  // Keep only last 20 items
+  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
+}
+
+// Battle end
+function showBattleEnd(winner, reason, eloChange, scores) {
+  const isWinner = winner === user.cfHandle;
+  const isDraw = winner === 'draw';
+
+  document.getElementById('end-title').textContent = isDraw ? 'DRAW' : isWinner ? 'VICTORY' : 'DEFEAT';
+  document.getElementById('end-title').style.color = isDraw ? 'var(--warning)' : isWinner ? 'var(--accent)' : 'var(--danger)';
+  document.getElementById('end-winner-name').textContent = isDraw ? 'It\'s a tie!' : (winner + ' wins!');
+
+  const [p1, p2] = (battleData?.players || []);
+  document.getElementById('end-scores').innerHTML = `
+    <div class="end-score-cell">
+      <div class="end-score-num" style="color: var(--accent)">${p1?.score || 0}</div>
+      <div class="end-score-name">${p1?.name || '—'}</div>
+    </div>
+    <div class="end-score-cell">
+      <div class="end-score-num" style="color: var(--info)">${p2?.score || 0}</div>
+      <div class="end-score-name">${p2?.name || '—'}</div>
+    </div>
+  `;
+
+  if (eloChange && !isDraw) {
+    const sign = isWinner ? '+' : '-';
+    const color = isWinner ? 'var(--accent)' : 'var(--danger)';
+    document.getElementById('elo-change-display').innerHTML =
+      `ELO: <span style="color:${color}">${sign}${eloChange}</span>`;
+  }
+
+  const overlay = document.getElementById('battle-end-overlay');
+  overlay.classList.add('show');
+
+  // Celebrate if winner
+  if (isWinner) spawnParticles();
+  
+  // Update local user elo
+  if (!isDraw && eloChange) {
+    const delta = isWinner ? eloChange : -eloChange;
+    const stored = JSON.parse(localStorage.getItem('cb_user') || '{}');
+    stored.elo = (stored.elo || 1000) + delta;
+    localStorage.setItem('cb_user', JSON.stringify(stored));
+  }
+}
+
+function spawnParticles() {
+  const colors = ['#00ff88', '#ffcc00', '#0af', '#ff3b30'];
+  for (let i = 0; i < 60; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = '-10px';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    p.style.animationDelay = Math.random() * 0.5 + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 4000);
+  }
+}
+
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type === 'error' ? 'error' : ''}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// Load initial state
+async function loadBattle() {
+  try {
+    const res = await fetch(`/api/battle/${roomCode}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('Battle not found', 'error'); return; }
+    battleData = data;
+    initBattle(data);
+  } catch {
+    showToast('Failed to load battle', 'error');
+  }
+}
+
+loadBattle();
+</script>
+</body>
+</html>
+
